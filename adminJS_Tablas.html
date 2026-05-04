@@ -1,0 +1,483 @@
+<script>
+  function crearBadgeEstado(texto) {
+    var t = (texto || "").toString().trim();
+    var norm = t.toUpperCase();
+    var span = document.createElement('span');
+    span.className = 'badge rounded-pill';
+
+    if (norm === 'ACTIVO' || norm === 'APROBADO') span.classList.add('bg-success');
+    else if (norm === 'INACTIVO' || norm === 'RECHAZADO') span.classList.add('bg-danger');
+    else if (norm === 'PENDIENTE') span.classList.add('bg-warning', 'text-dark');
+    else span.classList.add('bg-secondary');
+
+    span.textContent = t || 'Sin estado';
+    return span;
+  }
+
+  function crearBotonVer(id) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-sm btn-outline-primary';
+    var icon = document.createElement('i');
+    icon.className = 'bi bi-eye';
+    btn.appendChild(icon);
+    var idStr = (id == null) ? '' : id.toString();
+    var safeId = idStr.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    btn.setAttribute('onclick', 'abrirModalDetalle("' + safeId + '")');
+    return btn;
+  }
+
+  function crearBotonEditar(modalFn, id) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-sm btn-outline-primary';
+    var icon = document.createElement('i');
+    icon.className = 'bi bi-pencil';
+    btn.appendChild(icon);
+    var idStr = (id == null) ? '' : id.toString();
+    var safeId = idStr.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    btn.setAttribute('onclick', modalFn + '("' + safeId + '")');
+    return btn;
+  }
+
+  function crearBotonCambiarEstado(hoja, id, estado) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-sm btn-outline-warning';
+    var icon = document.createElement('i');
+    icon.className = 'bi bi-power';
+    btn.appendChild(icon);
+    var hojaStr = (hoja == null) ? '' : hoja.toString();
+    var idStr = (id == null) ? '' : id.toString();
+    var estStr = (estado == null) ? '' : estado.toString();
+    var safeHoja = hojaStr.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    var safeId = idStr.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    var safeEst = estStr.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    btn.setAttribute('onclick', 'cambiarEstadoCRUD("' + safeHoja + '","' + safeId + '","' + safeEst + '")');
+    return btn;
+  }
+
+  function normalizarTexto(v) {
+    return (v || "")
+      .toString()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+  }
+
+  function defaultSearchRowText(row) {
+    if (!row || !row.length) return '';
+    return row.map(function (v) { return (v == null ? '' : v).toString(); }).join(' ');
+  }
+
+  function TablaPaginada(opts) {
+    this.tbodyId = opts.tbodyId;
+    this.buscarId = opts.buscarId;
+    this.filtroEstadoId = opts.filtroEstadoId;
+    this.paginacionId = opts.paginacionId;
+    this.cols = opts.cols;
+    this.itemsPorPagina = 10;
+    this.paginaActual = 1;
+    this.datosOriginales = [];
+    this.datosFiltrados = [];
+    this.query = '';
+    this.estadoFiltro = '';
+    this.getEstado = opts.getEstado;
+    this.searchRowText = opts.searchRowText || defaultSearchRowText;
+    this.rowRenderer = opts.rowRenderer;
+    this._bound = false;
+  }
+
+  TablaPaginada.prototype.initDom = function () {
+    if (this._bound) return;
+
+    var input = document.getElementById(this.buscarId);
+    if (input) {
+      input.addEventListener('input', function (e) {
+        this.query = (e.target && e.target.value) ? e.target.value : '';
+        this.paginaActual = 1;
+        this.aplicarFiltro();
+      }.bind(this));
+    }
+
+    var selEstado = this.filtroEstadoId ? document.getElementById(this.filtroEstadoId) : null;
+    if (selEstado) {
+      selEstado.addEventListener('change', function (e) {
+        this.estadoFiltro = (e.target && e.target.value) ? e.target.value : '';
+        this.paginaActual = 1;
+        this.aplicarFiltro();
+      }.bind(this));
+      this.estadoFiltro = selEstado.value || '';
+    }
+
+    var pag = document.getElementById(this.paginacionId);
+    if (pag) {
+      var btnPrev = pag.querySelector('.btn-prev');
+      var btnNext = pag.querySelector('.btn-next');
+
+      if (btnPrev) {
+        btnPrev.addEventListener('click', function () {
+          this.cambiarPagina(this.paginaActual - 1);
+        }.bind(this));
+      }
+      if (btnNext) {
+        btnNext.addEventListener('click', function () {
+          this.cambiarPagina(this.paginaActual + 1);
+        }.bind(this));
+      }
+    }
+
+    this._bound = true;
+  };
+
+  TablaPaginada.prototype.setData = function (rows) {
+    this.datosOriginales = (rows || []).slice();
+    this.aplicarFiltro();
+  };
+
+  TablaPaginada.prototype.aplicarFiltro = function () {
+    var q = normalizarTexto(this.query);
+    var estadoWanted = (this.estadoFiltro || '').toString().trim();
+
+    if (!q && !estadoWanted) {
+      this.datosFiltrados = this.datosOriginales.slice();
+    } else {
+      this.datosFiltrados = this.datosOriginales.filter(function (r) {
+        if (estadoWanted) {
+          var est = this.getEstado ? this.getEstado(r) : '';
+          est = (est == null) ? '' : est.toString().trim();
+          if (est !== estadoWanted) return false;
+        }
+        if (!q) return true;
+        return normalizarTexto(this.searchRowText(r)).indexOf(q) !== -1;
+      }.bind(this));
+    }
+    this.render();
+  };
+
+  TablaPaginada.prototype.getTotalPaginas = function () {
+    return Math.max(1, Math.ceil(this.datosFiltrados.length / this.itemsPorPagina));
+  };
+
+  TablaPaginada.prototype.cambiarPagina = function (nuevaPagina) {
+    var total = this.getTotalPaginas();
+    var p = Math.max(1, Math.min(total, nuevaPagina));
+    if (p === this.paginaActual) return;
+    this.paginaActual = p;
+    this.render();
+  };
+
+  TablaPaginada.prototype.render = function () {
+    this.initDom();
+
+    var tbody = document.getElementById(this.tbodyId);
+    if (!tbody) return;
+
+    var totalPaginas = this.getTotalPaginas();
+    if (this.paginaActual > totalPaginas) this.paginaActual = totalPaginas;
+
+    var inicio = (this.paginaActual - 1) * this.itemsPorPagina;
+    var fin = inicio + this.itemsPorPagina;
+    var pageRows = this.datosFiltrados.slice(inicio, fin);
+
+    tbody.innerHTML = '';
+    if (!pageRows.length) {
+      if (typeof setEmptyTbody === 'function') setEmptyTbody(this.tbodyId, this.cols);
+      else tbody.innerHTML = '<tr><td colspan="' + this.cols + '" class="text-center text-muted py-4">Sin datos por el momento</td></tr>';
+    } else {
+      pageRows.forEach(function (r) {
+        var tr = this.rowRenderer(r);
+        if (tr) tbody.appendChild(tr);
+      }.bind(this));
+    }
+
+    this.actualizarPaginacion();
+  };
+
+  TablaPaginada.prototype.actualizarPaginacion = function () {
+    var pag = document.getElementById(this.paginacionId);
+    if (!pag) return;
+    var totalPaginas = this.getTotalPaginas();
+    var info = pag.querySelector('.page-info');
+    var btnPrev = pag.querySelector('.btn-prev');
+    var btnNext = pag.querySelector('.btn-next');
+
+    if (info) info.textContent = 'Página ' + this.paginaActual + ' de ' + totalPaginas;
+    if (btnPrev) btnPrev.disabled = this.paginaActual <= 1;
+    if (btnNext) btnNext.disabled = this.paginaActual >= totalPaginas;
+  };
+
+  function actualizarIndiceEmpleados(rows) {
+    var idx = {};
+    (rows || []).forEach(function (emp) {
+      var id = (emp && emp[0] != null) ? emp[0].toString().trim() : '';
+      if (id) idx[id] = emp;
+    });
+    window.__empleadosPorId = idx;
+  }
+
+  function obtenerUsuarioPorId(idUsuario) {
+    var id = (idUsuario == null) ? '' : idUsuario.toString().trim();
+    if (!id) return null;
+    var usuarios = (window.AppState && window.AppState.usuarios) ? window.AppState.usuarios : [];
+    for (var i = 0; i < usuarios.length; i++) {
+      var u = usuarios[i];
+      var uid = (u && u[0] != null) ? u[0].toString().trim() : '';
+      if (uid === id) return u;
+    }
+    return null;
+  }
+
+  function obtenerCedulaRealPorIdEmpleado(idEmpleado) {
+    var u = obtenerUsuarioPorId(idEmpleado);
+    var ced = u ? u[3] : '';
+    ced = (ced == null) ? '' : ced.toString().trim();
+    return ced || null;
+  }
+
+  function obtenerDatosJefe(idJefe) { 
+    var id = (idJefe == null) ? '' : idJefe.toString().trim(); 
+    if (!id || id === "Pendiente" || id === "N/A") return null; 
+    
+    var usuarios = window.AppState.usuarios || []; 
+    for (var i = 0; i < usuarios.length; i++) { 
+      if (usuarios[i][0] === id) { 
+        return { nombre: usuarios[i][2], correo: usuarios[i][1] }; 
+      } 
+    } 
+    return null; 
+  } 
+  function crearFilaSolicitud(r) {
+    var tr = document.createElement('tr');
+
+    // 1. Columna: Solicitud (Marca Temporal - r[1])
+    var tdSolicitud = document.createElement('td');
+    tdSolicitud.innerHTML = `<span class="text-muted small"><i class="bi bi-clock-history me-1"></i>${r[1]}</span>`;
+
+    // 2. Columna: Fecha del Permiso (Detalle de la ausencia)
+    var tdFechaPermiso = document.createElement('td');
+    var fIni = r[6] || "--";
+    var fFin = r[7] || "--";
+    var hIni = r[8] || "--";
+    var hFin = r[9] || "--";
+    
+    tdFechaPermiso.innerHTML = 
+      `<div><i class="bi bi-calendar3 text-primary me-1"></i>${fIni} al ${fFin}</div>` +
+      `<small class="text-muted"><i class="bi bi-watch me-1"></i>${hIni} - ${hFin}</small>`;
+
+    // 3. Columna: Empleado (r[3])
+    var tdEmpleado = document.createElement('td');
+    var usr = obtenerUsuarioPorId(r[2]);
+    var nombreEmpleado = (r[3] || (usr ? usr[2] : '') || '').toString();
+    tdEmpleado.innerHTML = `<strong>${nombreEmpleado}</strong>`;
+
+    // 4. Columna: Identificación (Cédula real cruzada)
+    var tdIdent = document.createElement('td');
+    var ced = obtenerCedulaRealPorIdEmpleado(r[2]);
+    tdIdent.textContent = ced ? ced : 'No encontrada';
+
+    // 5. Columna: Estado (r[18] - Estado TH)
+    var tdEstado = document.createElement('td');
+    tdEstado.appendChild(crearBadgeEstado(r[18]));
+
+    // 6. Columna: Acciones
+    var tdAcc = document.createElement('td');
+    tdAcc.className = 'text-end';
+    tdAcc.appendChild(crearBotonVer(r[0]));
+
+    // Ensamblamos la fila
+    tr.appendChild(tdSolicitud);
+    tr.appendChild(tdFechaPermiso);
+    tr.appendChild(tdEmpleado);
+    tr.appendChild(tdIdent);
+    tr.appendChild(tdEstado);
+    tr.appendChild(tdAcc);
+
+    return tr;
+  }
+
+  function crearFilaUsuario(r) { 
+    var tr = document.createElement('tr'); 
+    
+    // Columnas estándar: ID[0], Nombre[2], Identificación[3], Cargo[4], Correo[1] 
+    [0, 2, 3, 4, 1].forEach(function (i) { 
+      var td = document.createElement('td'); 
+      td.textContent = (r[i] || "").toString(); 
+      tr.appendChild(td); 
+    }); 
+ 
+    // Columna Jefe Cruzada (El ID_Jefe_Asignado está en el índice 6) 
+    var tdJefe = document.createElement('td'); 
+    var datosJefe = obtenerDatosJefe(r[6]); 
+    if (datosJefe) { 
+      tdJefe.innerHTML = '<strong>' + datosJefe.nombre + '</strong><br><small class="text-muted">' + datosJefe.correo + '</small>'; 
+    } else { 
+      tdJefe.innerHTML = '<span class="text-muted">Sin asignar</span>'; 
+    } 
+    tr.appendChild(tdJefe); 
+ 
+    // Columna Estado (El Estado está en el índice 7) 
+    var tdEstado = document.createElement('td'); 
+    tdEstado.appendChild(crearBadgeEstado(r[7])); 
+    tr.appendChild(tdEstado); 
+    
+    // Columna Acciones (Asumiendo que es Empleado, le pasamos 'Base_Usuarios') 
+    var tdAcc = document.createElement('td'); 
+    tdAcc.className = 'text-end'; 
+    tdAcc.appendChild(crearBotonEditar('abrirModalEmpleado', r[0])); 
+    tdAcc.appendChild(crearBotonCambiarEstado('Base_Usuarios', r[0], r[7])); 
+    tr.appendChild(tdAcc); 
+ 
+    return tr; 
+  }
+
+  function crearFilaJefe(r) {
+    var tr = document.createElement('tr');
+    [0, 1, 2].forEach(function (i) {
+      var td = document.createElement('td');
+      td.textContent = (r[i] || "").toString();
+      tr.appendChild(td);
+    });
+    var tdEstado = document.createElement('td');
+    tdEstado.appendChild(crearBadgeEstado(r[3]));
+    tr.appendChild(tdEstado);
+
+    var tdAcc = document.createElement('td');
+    tdAcc.className = 'text-end';
+    var wrap = document.createElement('div');
+    wrap.className = 'btn-group btn-group-sm';
+    wrap.appendChild(crearBotonEditar('abrirModalJefe', r[0]));
+    wrap.appendChild(crearBotonCambiarEstado('Base_Jefes', r[0], r[3]));
+    tdAcc.appendChild(wrap);
+    tr.appendChild(tdAcc);
+
+    return tr;
+  }
+
+  function crearFilaMotivo(r) {
+    var tr = document.createElement('tr');
+    var tdMotivo = document.createElement('td');
+    tdMotivo.textContent = (r[1] || "").toString();
+    var tdEstado = document.createElement('td');
+    tdEstado.appendChild(crearBadgeEstado(r[2]));
+    tr.appendChild(tdMotivo);
+    tr.appendChild(tdEstado);
+
+    var tdAcc = document.createElement('td');
+    tdAcc.className = 'text-end';
+    var wrap = document.createElement('div');
+    wrap.className = 'btn-group btn-group-sm';
+    wrap.appendChild(crearBotonEditar('abrirModalMotivo', r[0]));
+    wrap.appendChild(crearBotonCambiarEstado('Motivos_Solicitud', r[0], r[2]));
+    tdAcc.appendChild(wrap);
+    tr.appendChild(tdAcc);
+
+    return tr;
+  }
+
+  function getTextoBusquedaSolicitud(r) {
+    var usr = obtenerUsuarioPorId(r[2]);
+    var nombre = (usr ? usr[2] : r[3]) || '';
+    var correo = (usr ? usr[1] : '') || '';
+    var cargo = (usr ? usr[4] : '') || '';
+    var ced = (usr ? usr[3] : obtenerCedulaRealPorIdEmpleado(r[2])) || '';
+    return [
+      r[1], // Marca Temporal
+      r[6], // Fecha Inicio
+      nombre,
+      correo,
+      cargo,
+      ced,  // Cédula
+      r[18] // Estado
+    ].join(' ');
+  }
+
+  function inicializarTablasAdmin() {
+    if (!window.AdminTables) window.AdminTables = {};
+
+    if (!window.AdminTables.hoy) {
+      window.AdminTables.hoy = new TablaPaginada({
+        tbodyId: 'tbody_hoy',
+        buscarId: 'buscar_hoy',
+        paginacionId: 'paginacion_hoy',
+        cols: 6,
+        rowRenderer: crearFilaSolicitud,
+        searchRowText: getTextoBusquedaSolicitud
+      });
+    }
+    if (!window.AdminTables.todas) {
+      window.AdminTables.todas = new TablaPaginada({
+        tbodyId: 'tbody_todas',
+        buscarId: 'buscar_todas',
+        paginacionId: 'paginacion_todas',
+        cols: 6,
+        rowRenderer: crearFilaSolicitud,
+        searchRowText: getTextoBusquedaSolicitud
+      });
+    }
+    if (!window.AdminTables.empleados) {
+      window.AdminTables.empleados = new TablaPaginada({
+        tbodyId: 'tbody_empleados',
+        buscarId: 'buscar_empleados',
+        filtroEstadoId: 'filtro_empleados',
+        paginacionId: 'paginacion_empleados',
+        cols: 8,
+        rowRenderer: crearFilaUsuario,
+        getEstado: function (r) { return r ? r[7] : ''; }
+      });
+    }
+    if (!window.AdminTables.jefes) {
+      window.AdminTables.jefes = new TablaPaginada({
+        tbodyId: 'tbody_jefes',
+        buscarId: 'buscar_jefes',
+        filtroEstadoId: 'filtro_jefes',
+        paginacionId: 'paginacion_jefes',
+        cols: 5,
+        rowRenderer: crearFilaJefe,
+        getEstado: function (r) { return r ? r[3] : ''; }
+      });
+    }
+    if (!window.AdminTables.motivos) {
+      window.AdminTables.motivos = new TablaPaginada({
+        tbodyId: 'tbody_motivos',
+        buscarId: 'buscar_motivos',
+        filtroEstadoId: 'filtro_motivos',
+        paginacionId: 'paginacion_motivos',
+        cols: 3,
+        rowRenderer: crearFilaMotivo,
+        getEstado: function (r) { return r ? r[2] : ''; }
+      });
+    }
+  }
+
+  function renderizarModulosSolicitudes(rows) {
+    inicializarTablasAdmin();
+
+    var hoy = new Date();
+    var fechaHoyStr = ('0' + hoy.getDate()).slice(-2) + '/' + ('0' + (hoy.getMonth() + 1)).slice(-2) + '/' + hoy.getFullYear();
+
+    var solicitudesHoy = rows.filter(function (r) {
+      return (r[6] || "").toString().trim() === fechaHoyStr;
+    });
+
+    if (window.AdminTables.hoy) window.AdminTables.hoy.setData((solicitudesHoy || []).slice().reverse());
+    if (window.AdminTables.todas) window.AdminTables.todas.setData((rows || []).slice().reverse());
+  }
+
+  function renderEmpleados(rows) {
+    inicializarTablasAdmin();
+    actualizarIndiceEmpleados(rows || []);
+    if (window.AdminTables.empleados) window.AdminTables.empleados.setData(rows || []);
+  }
+
+  function renderJefes(rows) {
+    inicializarTablasAdmin();
+    if (window.AdminTables.jefes) window.AdminTables.jefes.setData(rows || []);
+  }
+
+  function renderMotivos(rows) {
+    inicializarTablasAdmin();
+    if (window.AdminTables.motivos) window.AdminTables.motivos.setData(rows || []);
+  }
+</script>

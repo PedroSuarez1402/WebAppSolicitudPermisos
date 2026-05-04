@@ -1,0 +1,19 @@
+<div class="mb-4 p-4 seccion-busqueda">
+  <label for="identificacion_busqueda" class="form-label fw-bold text-dark">1. Ingresa tu identificación:</label>
+  <div class="input-group">
+    <span class="input-group-text"><i class="bi bi-person-vcard"></i></span>
+    <input
+      type="text"
+      class="form-control form-control-lg"
+      id="identificacion_busqueda"
+      placeholder="Ej: 123456789"
+      inputmode="numeric"
+      pattern="[0-9]*"
+      oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+    >
+    <button class="btn btn-primary btn-buscar" type="button" id="btn_buscar" onclick="buscarDatos()">
+      <i class="bi bi-search"></i> Buscar mis datos
+    </button>
+  </div>
+  <div id="mensaje_error" class="text-danger mt-2 fw-bold oculto"></div>
+</div>

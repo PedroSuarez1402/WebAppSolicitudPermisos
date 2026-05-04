@@ -1,0 +1,160 @@
+<script>
+  window.onload = function() {
+    cargarMotivos();
+    actualizarModoTodoDia();
+  };
+
+  function cargarMotivos() {
+    google.script.run
+      .withSuccessHandler(function(motivos) {
+        var select = document.getElementById('motivo');
+        select.innerHTML = '';
+        var optDefault = document.createElement('option');
+        optDefault.value = '';
+        optDefault.disabled = true;
+        optDefault.selected = true;
+        optDefault.textContent = 'Seleccione un motivo...';
+        select.appendChild(optDefault);
+
+        (motivos || []).forEach(function(m) {
+          var opt = document.createElement('option');
+          opt.value = m;
+          opt.textContent = m;
+          select.appendChild(opt);
+        });
+      })
+      .withFailureHandler(function(err) {})
+      .obtenerMotivos();
+  }
+
+  function actualizarModoTodoDia() {
+    var toggle = document.getElementById('todo_dia');
+    var esTodoDia = toggle.checked;
+
+    var grupoHoraInicio = document.getElementById('grupo_hora_inicio');
+    var grupoHoraFin = document.getElementById('grupo_hora_fin');
+    var horaInicio = document.getElementById('hora_inicio');
+    var horaFin = document.getElementById('hora_fin');
+    var horasEstimadas = document.getElementById('horas_estimadas');
+
+    if (esTodoDia) {
+      grupoHoraInicio.classList.add('oculto');
+      grupoHoraFin.classList.add('oculto');
+      horaInicio.disabled = true;
+      horaFin.disabled = true;
+      horaInicio.required = false;
+      horaFin.required = false;
+      horasEstimadas.value = "8:00"; 
+    } else {
+      grupoHoraInicio.classList.remove('oculto');
+      grupoHoraFin.classList.remove('oculto');
+      horaInicio.disabled = false;
+      horaFin.disabled = false;
+      horaInicio.required = true;
+      horaFin.required = true;
+      calcularHorasEstimadas();
+    }
+  }
+
+  function calcularHorasEstimadas() {
+    var esTodoDia = document.getElementById('todo_dia').checked;
+    var horasEstimadas = document.getElementById('horas_estimadas');
+
+    if (esTodoDia) {
+      horasEstimadas.value = "8:00";
+      return;
+    }
+
+    var fechaInicio = document.getElementById('fecha_inicio').value;
+    var fechaFin = document.getElementById('fecha_fin').value;
+    var horaInicio = document.getElementById('hora_inicio').value;
+    var horaFin = document.getElementById('hora_fin').value;
+
+    if (!fechaInicio || !fechaFin || !horaInicio || !horaFin) {
+      horasEstimadas.value = "";
+      return;
+    }
+
+    var inicio = new Date(fechaInicio + "T" + horaInicio);
+    var fin = new Date(fechaFin + "T" + horaFin);
+
+    if (isNaN(inicio.getTime()) || isNaN(fin.getTime()) || fin <= inicio) {
+      horasEstimadas.value = "";
+      return;
+    }
+
+    var diffMin = Math.round((fin.getTime() - inicio.getTime()) / 60000);
+    var h = Math.floor(diffMin / 60);
+    var m = diffMin % 60;
+
+    horasEstimadas.value = String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0");
+  }
+
+  function enviarFormulario() {
+    const btnEnviar = document.getElementById('btn_enviar');
+    const form = document.getElementById('form_permisos');
+
+    if (!form) return;
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+
+    btnEnviar.disabled = true;
+    btnEnviar.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enviando...';
+
+    const archivoInput = document.getElementById('adjunto');
+    const file = archivoInput && archivoInput.files ? archivoInput.files[0] : null;
+
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        ejecutarEnvio({ base64: e.target.result, name: file.name, type: file.type });
+      };
+      reader.readAsDataURL(file);
+    } else {
+      ejecutarEnvio(null);
+    }
+  }
+
+  function ejecutarEnvio(fileData) {
+    const btnEnviar = document.getElementById('btn_enviar');
+    const datos = {
+      id_empleado: document.getElementById('id_empleado').value,
+      identificacion: document.getElementById('identificacion').value,
+      nombre: document.getElementById('nombre').value,
+      correo: document.getElementById('correo').value,
+      cargo: document.getElementById('cargo').value,
+      id_jefe: document.getElementById('id_jefe').value,
+      correo_jefe: document.getElementById('correo_jefe').value,
+      jefe_inmediato: document.getElementById('jefe_inmediato').value,
+      fecha_inicio: document.getElementById('fecha_inicio').value,
+      fecha_fin: document.getElementById('fecha_fin').value,
+      todo_dia: document.getElementById('todo_dia').checked,
+      hora_inicio: document.getElementById('hora_inicio').value,
+      hora_fin: document.getElementById('hora_fin').value,
+      horas_estimadas: document.getElementById('horas_estimadas').value,
+      motivo: document.getElementById('motivo').value,
+      observaciones: document.getElementById('observaciones').value,
+      archivo: fileData
+    };
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res.exito) {
+          alert("✅ " + res.mensaje);
+          location.reload();
+        } else {
+          alert("❌ " + res.mensaje);
+          btnEnviar.disabled = false;
+          btnEnviar.innerHTML = '<i class="bi bi-send-fill"></i> Enviar Solicitud';
+        }
+      })
+      .withFailureHandler(function(err) {
+        alert("Error crítico: " + err);
+        btnEnviar.disabled = false;
+        btnEnviar.innerHTML = '<i class="bi bi-send-fill"></i> Enviar Solicitud';
+      })
+      .procesarSolicitud(datos);
+  }
+</script>

@@ -1,0 +1,254 @@
+<script>
+  function llenarSelectJefes() {
+    var sel = document.getElementById('select_jefe_empleado');
+    if (!sel) return;
+
+    while (sel.options.length > 1) sel.remove(1);
+
+    var usuarios = (window.AppState && window.AppState.usuarios) ? window.AppState.usuarios : [];
+    var jefes = (typeof obtenerJefesDesdeUsuarios === 'function') ? obtenerJefesDesdeUsuarios(usuarios) : [];
+    jefes.forEach(function (r) {
+      var estado = (r && r[3] != null) ? r[3].toString().trim() : '';
+      if (estado !== 'Activo') return;
+
+      var opt = document.createElement('option');
+      opt.value = (r[0] || '').toString();
+      opt.textContent = (r[1] || '').toString();
+      sel.appendChild(opt);
+    });
+  }
+
+  function abrirModalEmpleado(id) {
+    var modalEl = document.getElementById('modalCRUD_Empleado');
+    var form = document.getElementById('formCRUD_Empleado');
+    if (!modalEl || !form || !window.bootstrap) return;
+
+    var hiddenId = document.getElementById('id_empleado_crud');
+    var titulo = document.getElementById('tituloModalEmpleado');
+
+    form.classList.remove('was-validated');
+    form.reset();
+    if (hiddenId) hiddenId.value = '';
+
+    llenarSelectJefes();
+
+    var idStr = (id == null) ? '' : id.toString().trim();
+    if (!idStr) {
+      if (titulo) titulo.textContent = 'Nuevo Empleado';
+    } else {
+      if (titulo) titulo.textContent = 'Editar Empleado';
+      var usuarios = (window.AppState && window.AppState.usuarios) ? window.AppState.usuarios : [];
+      var empleados = (typeof obtenerEmpleadosDesdeUsuarios === 'function') ? obtenerEmpleadosDesdeUsuarios(usuarios) : [];
+      var row = null;
+      for (var i = 0; i < empleados.length; i++) {
+        if ((empleados[i] && empleados[i][0] != null ? empleados[i][0].toString().trim() : '') === idStr) {
+          row = empleados[i];
+          break;
+        }
+      }
+
+      if (row) {
+        if (hiddenId) hiddenId.value = idStr;
+        var inpNombre = document.getElementById('emp_nombre');
+        var inpIdent = document.getElementById('emp_identificacion');
+        var inpCorreo = document.getElementById('emp_correo');
+        var inpCargo = document.getElementById('emp_cargo');
+        var selJefe = document.getElementById('select_jefe_empleado');
+
+        if (inpNombre) inpNombre.value = (row[2] || '').toString();
+        if (inpIdent) inpIdent.value = (row[3] || '').toString();
+        if (inpCorreo) inpCorreo.value = (row[1] || '').toString();
+        if (inpCargo) inpCargo.value = (row[4] || '').toString();
+        if (selJefe) selJefe.value = (row[6] || '').toString();
+      }
+    }
+
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  }
+
+  function abrirModalJefe(id) {
+    var modalEl = document.getElementById('modalCRUD_Jefe');
+    var form = document.getElementById('formCRUD_Jefe');
+    if (!modalEl || !form || !window.bootstrap) return;
+
+    var hiddenId = document.getElementById('id_jefe_crud');
+    var titulo = document.getElementById('tituloModalJefe');
+
+    form.classList.remove('was-validated');
+    form.reset();
+    if (hiddenId) hiddenId.value = '';
+
+    var idStr = (id == null) ? '' : id.toString().trim();
+    if (!idStr) {
+      if (titulo) titulo.textContent = 'Nuevo Jefe';
+    } else {
+      if (titulo) titulo.textContent = 'Editar Jefe';
+      var usuarios = (window.AppState && window.AppState.usuarios) ? window.AppState.usuarios : [];
+      var jefes = (typeof obtenerJefesDesdeUsuarios === 'function') ? obtenerJefesDesdeUsuarios(usuarios) : [];
+      var row = null;
+      for (var i = 0; i < jefes.length; i++) {
+        if ((jefes[i] && jefes[i][0] != null ? jefes[i][0].toString().trim() : '') === idStr) {
+          row = jefes[i];
+          break;
+        }
+      }
+      if (row) {
+        if (hiddenId) hiddenId.value = idStr;
+        var inpNombre = document.getElementById('jefe_nombre');
+        var inpCorreo = document.getElementById('jefe_correo');
+        if (inpNombre) inpNombre.value = (row[1] || '').toString();
+        if (inpCorreo) inpCorreo.value = (row[2] || '').toString();
+      }
+    }
+
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  }
+
+  function abrirModalMotivo(id) {
+    var modalEl = document.getElementById('modalCRUD_Motivo');
+    var form = document.getElementById('formCRUD_Motivo');
+    if (!modalEl || !form || !window.bootstrap) return;
+
+    var hiddenId = document.getElementById('id_motivo_crud');
+    var titulo = document.getElementById('tituloModalMotivo');
+
+    form.classList.remove('was-validated');
+    form.reset();
+    if (hiddenId) hiddenId.value = '';
+
+    var idStr = (id == null) ? '' : id.toString().trim();
+    if (!idStr) {
+      if (titulo) titulo.textContent = 'Nuevo Motivo';
+    } else {
+      if (titulo) titulo.textContent = 'Editar Motivo';
+      var motivos = (window.AppState && window.AppState.motivos) ? window.AppState.motivos : [];
+      var row = null;
+      for (var i = 0; i < motivos.length; i++) {
+        if ((motivos[i] && motivos[i][0] != null ? motivos[i][0].toString().trim() : '') === idStr) {
+          row = motivos[i];
+          break;
+        }
+      }
+      if (row) {
+        if (hiddenId) hiddenId.value = idStr;
+        var inpDesc = document.getElementById('motivo_descripcion');
+        if (inpDesc) inpDesc.value = (row[1] || '').toString();
+      }
+    }
+
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  }
+
+  function cambiarEstadoCRUD(modulo, id, estadoActual) {
+    var hoja = (modulo || '').toString().trim();
+    var idStr = (id == null) ? '' : id.toString().trim();
+    if (!hoja || !idStr) return;
+
+    var est = (estadoActual || '').toString().trim();
+    var estNorm = est.toLowerCase();
+    var nuevoEstado = (estNorm === 'activo') ? 'Inactivo' : 'Activo';
+
+    if (!confirm('¿Deseas cambiar el estado a ' + nuevoEstado + '?')) return;
+
+    google.script.run
+      .withSuccessHandler(function (resp) {
+        if (resp && resp.exito) {
+          alert('Estado actualizado correctamente');
+          if (typeof cargarDatosAdmin === 'function') cargarDatosAdmin();
+          return;
+        }
+        alert((resp && (resp.error || resp.mensaje)) ? (resp.error || resp.mensaje) : 'Error al cambiar estado');
+      })
+      .withFailureHandler(function (err) {
+        var msg = (err && err.message) ? err.message : (err ? err.toString() : 'Error');
+        alert(msg);
+      })
+      .cambiarEstadoRegistroAdmin(hoja, idStr, nuevoEstado);
+  }
+
+  (function () {
+    function bindForm(formId, modalId, buildPayloadFn, runnerFnName) {
+      var form = document.getElementById(formId);
+      var modalEl = document.getElementById(modalId);
+      if (!form || !modalEl) return;
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        if (!form.checkValidity()) {
+          form.classList.add('was-validated');
+          return;
+        }
+
+        var btn = form.querySelector('button[type="submit"]');
+        var prevText = btn ? btn.textContent : '';
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = 'Guardando...';
+        }
+
+        var payload = buildPayloadFn();
+
+        google.script.run
+          .withSuccessHandler(function (resp) {
+            if (btn) {
+              btn.disabled = false;
+              btn.textContent = prevText;
+            }
+
+            if (resp && resp.exito) {
+              if (window.bootstrap) bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+              alert('Guardado correctamente');
+              if (typeof cargarDatosAdmin === 'function') cargarDatosAdmin();
+              return;
+            }
+
+            alert((resp && (resp.error || resp.mensaje)) ? (resp.error || resp.mensaje) : 'Error al guardar');
+          })
+          .withFailureHandler(function (err) {
+            if (btn) {
+              btn.disabled = false;
+              btn.textContent = prevText;
+            }
+            var msg = (err && err.message) ? err.message : (err ? err.toString() : 'Error');
+            alert(msg);
+          })[runnerFnName](payload);
+      });
+    }
+
+    function buildEmpleadoPayload() {
+      return {
+        id: (document.getElementById('id_empleado_crud') || {}).value || '',
+        nombre: (document.getElementById('emp_nombre') || {}).value || '',
+        identificacion: (document.getElementById('emp_identificacion') || {}).value || '',
+        correo: (document.getElementById('emp_correo') || {}).value || '',
+        cargo: (document.getElementById('emp_cargo') || {}).value || '',
+        idJefe: (document.getElementById('select_jefe_empleado') || {}).value || ''
+      };
+    }
+
+    function buildJefePayload() {
+      return {
+        id: (document.getElementById('id_jefe_crud') || {}).value || '',
+        nombre: (document.getElementById('jefe_nombre') || {}).value || '',
+        correo: (document.getElementById('jefe_correo') || {}).value || ''
+      };
+    }
+
+    function buildMotivoPayload() {
+      return {
+        id: (document.getElementById('id_motivo_crud') || {}).value || '',
+        descripcion: (document.getElementById('motivo_descripcion') || {}).value || ''
+      };
+    }
+
+    function init() {
+      bindForm('formCRUD_Empleado', 'modalCRUD_Empleado', buildEmpleadoPayload, 'guardarEmpleadoAdmin');
+      bindForm('formCRUD_Jefe', 'modalCRUD_Jefe', buildJefePayload, 'guardarJefeAdmin');
+      bindForm('formCRUD_Motivo', 'modalCRUD_Motivo', buildMotivoPayload, 'guardarMotivoAdmin');
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+  })();
+</script>

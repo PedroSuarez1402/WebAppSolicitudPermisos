@@ -1,0 +1,105 @@
+<div class="modal fade" id="modalCRUD_Empleado" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="tituloModalEmpleado">Nuevo Empleado</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <form id="formCRUD_Empleado" novalidate>
+        <div class="modal-body">
+          <input type="hidden" id="id_empleado_crud" value="">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label" for="emp_nombre">Nombre Completo</label>
+              <input type="text" class="form-control" id="emp_nombre" required>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="emp_identificacion">Identificación (cédula)</label>
+              <input type="text" class="form-control" id="emp_identificacion" required>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="emp_correo">Correo Electrónico</label>
+              <input type="email" class="form-control" id="emp_correo" required>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="emp_cargo">Cargo</label>
+              <input type="text" class="form-control" id="emp_cargo" required>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="select_jefe_empleado">Jefe Inmediato</label>
+              <select class="form-select" id="select_jefe_empleado" required>
+                <option value="" selected>Seleccione...</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save me-1"></i>Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalCRUD_Jefe" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="tituloModalJefe">Nuevo Jefe</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <form id="formCRUD_Jefe" novalidate>
+        <div class="modal-body">
+          <input type="hidden" id="id_jefe_crud" value="">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label" for="jefe_nombre">Nombre Completo</label>
+              <input type="text" class="form-control" id="jefe_nombre" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="jefe_correo">Correo Electrónico</label>
+              <input type="email" class="form-control" id="jefe_correo" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save me-1"></i>Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalCRUD_Motivo" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="tituloModalMotivo">Nuevo Motivo</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <form id="formCRUD_Motivo" novalidate>
+        <div class="modal-body">
+          <input type="hidden" id="id_motivo_crud" value="">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label" for="motivo_descripcion">Descripción del Motivo</label>
+              <input type="text" class="form-control" id="motivo_descripcion" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save me-1"></i>Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

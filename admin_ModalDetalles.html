@@ -1,0 +1,66 @@
+<div class="modal fade" id="modalDetalleSolicitud" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Detalle de Solicitud</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <div class="card border-0 bg-light h-100">
+              <div class="card-body">
+                <div class="text-muted small mb-1">Nombre del Empleado</div>
+                <div class="fw-semibold" id="md_nombreEmpleado">--</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <div class="card border-0 bg-light h-100">
+              <div class="card-body">
+                <div class="text-muted small mb-1">Fechas del Permiso</div>
+                <div class="fw-semibold" id="md_fechasPermiso">--</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="card border-0 bg-light">
+              <div class="card-body">
+                <div class="text-muted small mb-1">Motivo</div>
+                <div class="fw-semibold" id="md_motivo">--</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="card border-0 bg-light">
+              <div class="card-body">
+                <div class="d-flex align-items-start justify-content-between gap-3">
+                  <div class="flex-grow-1">
+                    <div class="text-muted small mb-1">Observaciones</div>
+                    <div class="fw-semibold" id="md_observaciones">--</div>
+                  </div>
+                  <div class="text-end">
+                    <button type="button" class="btn btn-sm btn-outline-primary d-none" id="md_btnVerAdjunto">
+                      <i class="bi bi-paperclip me-1"></i>Ver Adjunto
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <input type="hidden" id="md_idSolicitud" value="">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-danger" id="btnRechazarSolicitud">Rechazar</button>
+        <button type="button" class="btn btn-success" id="btnAprobarSolicitud">Aprobar</button>
+      </div>
+    </div>
+  </div>
+</div>

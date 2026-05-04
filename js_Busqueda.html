@@ -1,0 +1,66 @@
+<script>
+  function buscarDatos() {
+    var identificacion = document.getElementById('identificacion_busqueda').value;
+    var btn = document.getElementById('btn_buscar');
+    var divError = document.getElementById('mensaje_error');
+    var seccionDatos = document.getElementById('seccion_datos');
+
+    if (identificacion.trim() === "") {
+      mostrarError("Por favor, escribe tu identificación.");
+      return;
+    }
+
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Buscando...';
+    btn.disabled = true;
+    divError.classList.add('oculto');
+    seccionDatos.classList.add('oculto');
+
+    google.script.run
+      .withSuccessHandler(function(respuesta) {
+        restaurarBoton();
+
+        if (respuesta.error) {
+          mostrarError(respuesta.error);
+        } else {
+          document.getElementById('correo').value = respuesta.correo;
+          document.getElementById('nombre').value = respuesta.nombre;
+          document.getElementById('identificacion').value = respuesta.identificacion;
+          document.getElementById('cargo').value = respuesta.cargo;
+          document.getElementById('jefe_inmediato').value = respuesta.nombre_jefe || "";
+          
+          document.getElementById('id_empleado').value = respuesta.id_empleado || "";
+          document.getElementById('id_jefe').value = respuesta.id_jefe || "";
+          document.getElementById('correo_jefe').value = respuesta.correo_jefe || "";
+
+          var badge = document.getElementById('estado_badge');
+          var estadoTexto = (respuesta.estado || "").toString().trim();
+          badge.innerText = estadoTexto || "Sin estado";
+          badge.classList.remove('bg-success', 'bg-danger', 'bg-secondary');
+          if (estadoTexto.toLowerCase() === "activo") {
+            badge.classList.add('bg-success');
+          } else {
+            badge.classList.add('bg-danger');
+          }
+
+          seccionDatos.classList.remove('oculto');
+        }
+      })
+      .withFailureHandler(function(error) {
+        restaurarBoton();
+        mostrarError("Hubo un error de conexión con la base de datos.");
+      })
+      .buscarEmpleadoPorIdentificacion(identificacion);
+  }
+
+  function mostrarError(mensaje) {
+    var divError = document.getElementById('mensaje_error');
+    divError.innerText = mensaje;
+    divError.classList.remove('oculto');
+  }
+
+  function restaurarBoton() {
+    var btn = document.getElementById('btn_buscar');
+    btn.innerHTML = '<i class="bi bi-search"></i> Buscar mis datos';
+    btn.disabled = false;
+  }
+</script>

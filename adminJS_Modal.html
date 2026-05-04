@@ -1,0 +1,137 @@
+<script>
+  function abrirModalDetalle(idSolicitud) {
+    var id = (idSolicitud == null) ? '' : idSolicitud.toString().trim();
+    var solicitudes = (window.AppState && window.AppState.solicitudes) ? window.AppState.solicitudes : [];
+
+    var row = null;
+    for (var i = 0; i < solicitudes.length; i++) {
+      var r = solicitudes[i];
+      var rid = (r && r[0] != null) ? r[0].toString().trim() : '';
+      if (rid === id) {
+        row = r;
+        break;
+      }
+    }
+
+    var elNombre = document.getElementById('md_nombreEmpleado');
+    var elFechas = document.getElementById('md_fechasPermiso');
+    var elMotivo = document.getElementById('md_motivo');
+    var elObs = document.getElementById('md_observaciones');
+    var elId = document.getElementById('md_idSolicitud');
+    var btnAdj = document.getElementById('md_btnVerAdjunto');
+    var btnApr = document.getElementById('btnAprobarSolicitud');
+    var btnRec = document.getElementById('btnRechazarSolicitud');
+
+    if (elId) elId.value = id;
+
+    if (!row) {
+      if (elNombre) elNombre.textContent = '--';
+      if (elFechas) elFechas.textContent = '--';
+      if (elMotivo) elMotivo.textContent = '--';
+      if (elObs) elObs.textContent = 'Sin observaciones';
+      if (btnAdj) btnAdj.classList.add('d-none');
+    } else {
+      var nombre = (row[3] || '').toString().trim();
+      var motivo = (row[11] || '').toString().trim();
+      var obs = (row[12] || '').toString().trim();
+      var adj = (row[13] || '').toString().trim();
+
+      var fIni = (row[6] || '').toString().trim();
+      var fFin = (row[7] || '').toString().trim();
+      var hIni = (row[8] || '').toString().trim();
+      var hFin = (row[9] || '').toString().trim();
+
+      var fechas = '';
+      if (fIni || fFin) fechas = (fIni || '--') + ' al ' + (fFin || '--');
+      else fechas = '--';
+      if (hIni || hFin) fechas += ' (' + (hIni || '--') + ' - ' + (hFin || '--') + ')';
+
+      if (elNombre) elNombre.textContent = nombre || '--';
+      if (elFechas) elFechas.textContent = fechas;
+      if (elMotivo) elMotivo.textContent = motivo || '--';
+      if (elObs) elObs.textContent = obs || 'Sin observaciones';
+
+      if (btnAdj) {
+        if (adj) {
+          btnAdj.classList.remove('d-none');
+          btnAdj.onclick = function () { window.open(adj, '_blank'); };
+        } else {
+          btnAdj.classList.add('d-none');
+          btnAdj.onclick = null;
+        }
+      }
+    }
+
+    if (btnApr) {
+      btnApr.disabled = false;
+      btnApr.textContent = 'Aprobar';
+    }
+    if (btnRec) {
+      btnRec.disabled = false;
+      btnRec.textContent = 'Rechazar';
+    }
+
+    var modalEl = document.getElementById('modalDetalleSolicitud');
+    if (!modalEl || !window.bootstrap || !window.bootstrap.Modal) return;
+    var inst = window.__modalDetalleSolicitud || new bootstrap.Modal(modalEl);
+    window.__modalDetalleSolicitud = inst;
+    inst.show();
+  }
+
+  function procesarEstadoAdmin(estado) {
+    var elId = document.getElementById('md_idSolicitud');
+    var id = elId ? elId.value : '';
+
+    var btnApr = document.getElementById('btnAprobarSolicitud');
+    var btnRec = document.getElementById('btnRechazarSolicitud');
+
+    function setProcesando(on) {
+      if (btnApr) {
+        btnApr.disabled = on;
+        btnApr.textContent = on ? 'Procesando...' : 'Aprobar';
+      }
+      if (btnRec) {
+        btnRec.disabled = on;
+        btnRec.textContent = on ? 'Procesando...' : 'Rechazar';
+      }
+    }
+
+    if (!id) {
+      alert('No se encontró el ID de la solicitud.');
+      return;
+    }
+
+    setProcesando(true);
+
+    google.script.run
+      .withSuccessHandler(function (resp) {
+        if (resp && resp.exito) {
+          try {
+            bootstrap.Modal.getInstance(document.getElementById('modalDetalleSolicitud')).hide();
+          } catch (e) {}
+          alert('Estado actualizado correctamente');
+          if (typeof cargarDatosAdmin === 'function') cargarDatosAdmin();
+          return;
+        }
+        alert((resp && (resp.error || resp.mensaje)) ? (resp.error || resp.mensaje) : 'Error al actualizar');
+        setProcesando(false);
+      })
+      .withFailureHandler(function (err) {
+        var msg = (err && err.message) ? err.message : (err ? err.toString() : 'Error');
+        alert(msg);
+        setProcesando(false);
+      })
+      .actualizarEstadoSolicitudAdmin(id, estado);
+  }
+
+  (function () {
+    function bind() {
+      var btnApr = document.getElementById('btnAprobarSolicitud');
+      var btnRec = document.getElementById('btnRechazarSolicitud');
+      if (btnApr) btnApr.addEventListener('click', function () { procesarEstadoAdmin('APROBADO'); });
+      if (btnRec) btnRec.addEventListener('click', function () { procesarEstadoAdmin('RECHAZADO'); });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind);
+    else bind();
+  })();
+</script>

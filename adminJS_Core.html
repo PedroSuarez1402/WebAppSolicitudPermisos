@@ -1,0 +1,155 @@
+<script>
+  window.AppState = { solicitudes: [], usuarios: [], motivos: [], configuracion: [] };
+
+  function obtenerEmpleadosDesdeUsuarios(usuarios) {
+    return (usuarios || [])
+      .filter(function (r) {
+        var rol = (r && r[5] != null) ? r[5].toString().trim() : '';
+        return rol !== '2';
+      })
+      .map(function (r) {
+        return [
+          (r && r[0] != null) ? r[0].toString().trim() : '',
+          (r && r[1] != null) ? r[1].toString().trim() : '',
+          (r && r[2] != null) ? r[2].toString().trim() : '',
+          (r && r[3] != null) ? r[3].toString().trim() : '',
+          (r && r[4] != null) ? r[4].toString().trim() : '',
+          (r && r[5] != null) ? r[5].toString().trim() : '',
+          (r && r[6] != null) ? r[6].toString().trim() : '',
+          (r && r[7] != null) ? r[7].toString().trim() : ''
+        ];
+      });
+  }
+
+  function obtenerJefesDesdeUsuarios(usuarios) {
+    return (usuarios || [])
+      .filter(function (r) {
+        var rol = (r && r[5] != null) ? r[5].toString().trim() : '';
+        return rol === '2';
+      })
+      .map(function (r) {
+        return [
+          (r && r[0] != null) ? r[0].toString().trim() : '',
+          (r && r[2] != null) ? r[2].toString().trim() : '',
+          (r && r[1] != null) ? r[1].toString().trim() : '',
+          (r && r[7] != null) ? r[7].toString().trim() : ''
+        ];
+      });
+  }
+
+  window.onload = function () {
+    inicializarNavegacionAdmin();
+    mostrarSeccionAdmin('seccion_hoy');
+    if (typeof inicializarTablasAdmin === 'function') inicializarTablasAdmin();
+    cargarDatosAdmin();
+  };
+
+  function inicializarNavegacionAdmin() {
+    var links = document.querySelectorAll('.sidebar-link');
+    links.forEach(function (link) {
+      link.addEventListener('click', function (e) {
+        e.preventDefault();
+        mostrarSeccionAdmin(link.getAttribute('data-section'));
+        activarLinkAdmin(link);
+      });
+    });
+  }
+
+  function mostrarSeccionAdmin(idSeccion) {
+    document.querySelectorAll('.admin-section').forEach(function (sec) {
+      sec.classList.add('oculto');
+    });
+    var seccion = document.getElementById(idSeccion);
+    if (seccion) seccion.classList.remove('oculto');
+  }
+
+  function activarLinkAdmin(linkActivo) {
+    document.querySelectorAll('.sidebar-link').forEach(function (l) {
+      l.classList.remove('active');
+    });
+    linkActivo.classList.add('active');
+  }
+
+  function setLoadingTbody(tbodyId) {
+    var tbody = document.getElementById(tbodyId);
+    if (tbody) tbody.innerHTML = '<tr><td colspan="100" class="text-center text-muted">Cargando datos...</td></tr>';
+  }
+
+  function setEmptyTbody(tbodyId, cols) {
+    var tbody = document.getElementById(tbodyId);
+    if (tbody) tbody.innerHTML = '<tr><td colspan="' + cols + '" class="text-center text-muted py-4">Sin datos por el momento</td></tr>';
+  }
+
+  function cargarDatosAdmin() {
+    setLoadingTbody('tbody_hoy');
+    setLoadingTbody('tbody_todas');
+    setLoadingTbody('tbody_empleados');
+    setLoadingTbody('tbody_jefes');
+    setLoadingTbody('tbody_motivos');
+
+    window.AppState.solicitudes = [];
+    window.AppState.usuarios = [];
+    window.AppState.motivos = [];
+    window.AppState.configuracion = [];
+
+    var solicitudesCargadas = false;
+    var usuariosCargados = false;
+    var motivosCargados = false;
+
+    function tryRender() {
+      if (!usuariosCargados) return;
+
+      var empleados = obtenerEmpleadosDesdeUsuarios(window.AppState.usuarios || []);
+      var jefes = obtenerJefesDesdeUsuarios(window.AppState.usuarios || []);
+
+      renderEmpleados(empleados || []);
+      renderJefes(jefes || []);
+
+      if (solicitudesCargadas) {
+        renderizarModulosSolicitudes(window.AppState.solicitudes || []);
+      }
+      if (motivosCargados) {
+        renderMotivos(window.AppState.motivos || []);
+      }
+    }
+
+    google.script.run
+      .withSuccessHandler(function (rows) {
+        window.AppState.solicitudes = rows || [];
+        solicitudesCargadas = true;
+        tryRender();
+      })
+      .withFailureHandler(function () {
+        window.AppState.solicitudes = [];
+        solicitudesCargadas = true;
+        tryRender();
+      })
+      .obtenerSolicitudesAdmin();
+
+    google.script.run
+      .withSuccessHandler(function (rows) {
+        window.AppState.usuarios = rows || [];
+        usuariosCargados = true;
+        tryRender();
+      })
+      .withFailureHandler(function () {
+        window.AppState.usuarios = [];
+        usuariosCargados = true;
+        tryRender();
+      })
+      .obtenerUsuariosAdmin();
+
+    google.script.run
+      .withSuccessHandler(function (rows) {
+        window.AppState.motivos = rows || [];
+        motivosCargados = true;
+        tryRender();
+      })
+      .withFailureHandler(function () {
+        window.AppState.motivos = [];
+        motivosCargados = true;
+        tryRender();
+      })
+      .obtenerMotivosAdmin();
+  }
+</script>

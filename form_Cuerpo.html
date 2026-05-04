@@ -1,0 +1,107 @@
+<div id="seccion_datos" class="oculto">
+  <div class="alert alert-success d-flex align-items-center" role="alert">
+    <i class="bi bi-check-circle-fill me-2 flex-shrink-0 fs-4"></i>
+    <div>Datos validados correctamente en la base de datos.</div>
+  </div>
+
+  <form id="form_permisos">
+    <input type="hidden" id="id_empleado">
+    <input type="hidden" id="id_jefe">
+    <input type="hidden" id="correo_jefe">
+    
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <label class="form-label text-muted fw-bold">Nombre Completo</label>
+        <input type="text" class="form-control bg-light" id="nombre" readonly>
+      </div>
+      <div class="col-md-6 mt-3 mt-md-0">
+        <label class="form-label text-muted fw-bold">Identificación</label>
+        <input type="text" class="form-control bg-light" id="identificacion" readonly>
+      </div>
+    </div>
+
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <label class="form-label text-muted fw-bold">Cargo</label>
+        <input type="text" class="form-control bg-light" id="cargo" readonly>
+      </div>
+      <div class="col-md-6 mt-3 mt-md-0">
+        <label class="form-label text-muted fw-bold">Correo</label>
+        <input type="text" class="form-control bg-light" id="correo" readonly>
+      </div>
+    </div>
+    
+    <div class="row mb-4">
+      <div class="col-md-6">
+        <label class="form-label text-muted fw-bold">Estado</label>
+        <div class="mt-1">
+          <span id="estado_badge" class="badge rounded-pill bg-secondary">Sin estado</span>
+        </div>
+      </div>
+      <div class="col-md-6 mt-3 mt-md-0">
+        <label class="form-label text-muted fw-bold">Jefe Inmediato</label>
+        <input type="text" class="form-control bg-light text-secondary" id="jefe_inmediato" readonly>
+      </div>
+    </div>
+
+    <hr>
+    
+    <h5 class="text-primary mt-4 mb-3"><i class="bi bi-clock-history"></i> 2. Detalles del Permiso</h5>
+
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <label for="fecha_inicio" class="form-label text-muted fw-bold">Fecha Inicio <span class="text-danger">*</span></label>
+        <input type="date" class="form-control" id="fecha_inicio" required onchange="calcularHorasEstimadas()">
+      </div>
+      <div class="col-md-6 mt-3 mt-md-0">
+        <label for="fecha_fin" class="form-label text-muted fw-bold">Fecha Fin <span class="text-danger">*</span></label>
+        <input type="date" class="form-control" id="fecha_fin" required onchange="calcularHorasEstimadas()">
+      </div>
+    </div>
+
+    <div class="form-check form-switch mb-3">
+      <input class="form-check-input" type="checkbox" role="switch" id="todo_dia" onchange="actualizarModoTodoDia()">
+      <label class="form-check-label fw-bold text-muted" for="todo_dia">¿El permiso es por todo el día?</label>
+    </div>
+
+    <div class="row mb-3">
+      <div class="col-md-6" id="grupo_hora_inicio">
+        <label for="hora_inicio" class="form-label text-muted fw-bold">Hora Inicio <span class="text-danger" id="ast_hora_ini">*</span></label>
+        <input type="time" class="form-control" id="hora_inicio" required onchange="calcularHorasEstimadas()">
+      </div>
+      <div class="col-md-6 mt-3 mt-md-0" id="grupo_hora_fin">
+        <label for="hora_fin" class="form-label text-muted fw-bold">Hora Fin <span class="text-danger" id="ast_hora_fin">*</span></label>
+        <input type="time" class="form-control" id="hora_fin" required onchange="calcularHorasEstimadas()">
+      </div>
+    </div>
+
+    <div class="row mb-4">
+      <div class="col-md-6">
+        <label for="horas_estimadas" class="form-label text-muted fw-bold">Horas estimadas</label>
+        <input type="text" class="form-control bg-light" id="horas_estimadas" readonly>
+      </div>
+      <div class="col-md-6 mt-3 mt-md-0">
+        <label for="motivo" class="form-label text-muted fw-bold">Motivo <span class="text-danger">*</span></label>
+        <select class="form-select" id="motivo" required>
+          <option value="" disabled selected>Seleccione un motivo...</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label for="observaciones" class="form-label text-muted fw-bold">Observaciones</label>
+      <textarea class="form-control" id="observaciones" rows="3" placeholder="Describe brevemente el permiso..."></textarea>
+    </div>
+
+    <div class="mb-4">
+      <label class="form-label">Adjuntar archivo (Opcional)</label>
+      <input class="form-control" type="file" id="adjunto">
+    </div>
+
+    <div class="d-grid gap-2">
+      <button type="button" class="btn btn-success btn-lg" id="btn_enviar" onclick="enviarFormulario()">
+        <i class="bi bi-send-fill"></i> Enviar Solicitud
+      </button>
+    </div>
+  </form>
+</div>
