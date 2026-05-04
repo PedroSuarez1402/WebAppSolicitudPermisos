@@ -1,4 +1,56 @@
 <script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (typeof window.LOGGED_UID === 'undefined') return;
+    if (window.LOGGED_UID === '') return;
+
+    var divBusqueda = document.querySelector('.seccion-busqueda');
+    if (divBusqueda) divBusqueda.classList.add('d-none');
+
+    var btn = document.getElementById('btn_buscar');
+    if (btn) {
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Cargando...';
+      btn.disabled = true;
+    }
+
+    google.script.run
+      .withSuccessHandler(llenarDatosUsuarioAutenticado)
+      .obtenerUsuarioPorId(window.LOGGED_UID);
+  });
+
+  function llenarDatosUsuarioAutenticado(usuario) {
+    var seccionDatos = document.getElementById('seccion_formulario') || document.getElementById('seccion_datos');
+    var divError = document.getElementById('mensaje_error') || document.getElementById('login_error');
+    var badge = document.getElementById('estado_badge');
+
+    if (!usuario) {
+      var divBusqueda = document.querySelector('.seccion-busqueda');
+      if (divBusqueda) divBusqueda.classList.remove('d-none');
+      if (divError) {
+        divError.textContent = 'Usuario no encontrado.';
+        divError.classList.remove('oculto', 'd-none');
+      }
+      return;
+    }
+
+    if (document.getElementById('correo')) document.getElementById('correo').value = usuario.correo || '';
+    if (document.getElementById('nombre')) document.getElementById('nombre').value = usuario.nombre || '';
+    if (document.getElementById('identificacion')) document.getElementById('identificacion').value = usuario.identificacion || '';
+    if (document.getElementById('cargo')) document.getElementById('cargo').value = usuario.cargo || '';
+
+    if (document.getElementById('id_empleado')) document.getElementById('id_empleado').value = usuario.id || '';
+    if (document.getElementById('id_jefe')) document.getElementById('id_jefe').value = usuario.id_jefe || '';
+    if (document.getElementById('jefe_inmediato')) document.getElementById('jefe_inmediato').value = usuario.nombre_jefe || '';
+    if (document.getElementById('correo_jefe')) document.getElementById('correo_jefe').value = usuario.correo_jefe || '';
+
+    if (badge) {
+      badge.innerText = 'Activo';
+      badge.classList.remove('bg-danger', 'bg-secondary');
+      badge.classList.add('bg-success');
+    }
+
+    if (seccionDatos) seccionDatos.classList.remove('oculto', 'd-none');
+  }
+
   function buscarDatos() {
     var identificacion = document.getElementById('identificacion_busqueda').value;
     var btn = document.getElementById('btn_buscar');

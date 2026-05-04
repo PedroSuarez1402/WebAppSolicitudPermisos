@@ -1,0 +1,81 @@
+<div id="seccion_menu_principal" class="d-none p-5">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <h2 id="bienvenida_usuario" class="text-primary mb-0"></h2>
+    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.top.location.href = window.APP_URL;">Cerrar Sesión</button>
+  </div>
+
+  <div class="row g-4 mt-3">
+    <div class="col-12 col-md-6 col-lg-3">
+      <div id="card_asistencia" class="card h-100 shadow-sm d-none">
+        <div class="card-body d-flex flex-column">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <i class="bi bi-clock-history fs-3 text-primary"></i>
+            <h5 class="card-title mb-0">Registrar Asistencia</h5>
+          </div>
+          <p class="card-text text-muted small flex-grow-1">Ingresa al módulo de reloj para registrar tus marcaciones.</p>
+          <button type="button" class="btn btn-primary w-100" onclick="abrirModalAsistencia()">Abrir Reloj</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-3">
+      <div id="card_permisos" class="card h-100 shadow-sm d-none">
+        <div class="card-body d-flex flex-column">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <i class="bi bi-calendar2-check fs-3 text-primary"></i>
+            <h5 class="card-title mb-0">Solicitar Permiso</h5>
+          </div>
+          <p class="card-text text-muted small flex-grow-1">Diligencia la solicitud de permisos.</p>
+          <button type="button" class="btn btn-primary w-100" onclick="window.top.location.href = window.APP_URL + '?v=formulario_permiso&uid=' + window.UsuarioActual.id;">Llenar Formulario</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-3">
+      <div id="card_aprobar" class="card h-100 shadow-sm d-none">
+        <div class="card-body d-flex flex-column">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <i class="bi bi-check2-square fs-3 text-primary"></i>
+            <h5 class="card-title mb-0">Aprobar Equipo</h5>
+          </div>
+          <p class="card-text text-muted small flex-grow-1">Revisa y aprueba las solicitudes de tu equipo.</p>
+          <button type="button" class="btn btn-primary w-100" onclick="alert('Módulo en construcción')">Ver Solicitudes</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-3">
+      <div id="card_admin" class="card h-100 shadow-sm d-none">
+        <div class="card-body d-flex flex-column">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <i class="bi bi-people fs-3 text-primary"></i>
+            <h5 class="card-title mb-0">Gestión Talento Humano</h5>
+          </div>
+          <p class="card-text text-muted small flex-grow-1">Administra usuarios, solicitudes y configuraciones.</p>
+          <button type="button" class="btn btn-primary w-100" onclick="window.top.location.href = window.APP_URL + '?v=admin';">Panel Administrativo</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalAsistencia" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Reloj Checador</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div id="estado_reloj_msg" class="text-muted">
+          <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+          Consultando reloj del servidor...
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-primary d-none" id="btn_registrar_reloj">Registrar Marcación</button>
+      </div>
+    </div>
+  </div>
+</div>

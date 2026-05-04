@@ -13,9 +13,15 @@
         <div class="col-lg-8 col-md-10">
           
           <div class="card p-4 card-formulario">
-            <h3 class="text-center mb-4 titulo-principal">
-              <i class="bi bi-calendar2-check"></i> Solicitud de Permisos
-            </h3>
+            <div class="d-flex align-items-center justify-content-between mb-4">
+              <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.top.location.href = window.APP_URL;">
+                <i class="bi bi-arrow-left"></i> Volver al Menú
+              </button>
+              <h3 class="text-center mb-0 titulo-principal flex-grow-1">
+                <i class="bi bi-calendar2-check"></i> Solicitud de Permisos
+              </h3>
+              <div style="width: 120px;"></div>
+            </div>
             
             <?!= include('form_Busqueda'); ?>
             <?!= include('form_Cuerpo'); ?>
@@ -27,6 +33,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
+    <script> window.APP_URL = '<?= ScriptApp.getService().getUrl() ?>'; </script>
+    <script> window.LOGGED_UID = '<?= uid ?>'; </script>
     <?!= include('js_Busqueda'); ?>
     <?!= include('js_Formulario'); ?>
   </body>

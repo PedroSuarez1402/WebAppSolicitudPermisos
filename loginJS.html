@@ -1,0 +1,79 @@
+<script>
+  function procesarLogin() {
+    var input = document.getElementById('login_correo');
+    var btn = document.getElementById('btn_ingresar');
+    var err = document.getElementById('login_error');
+
+    var correo = input ? input.value : '';
+    correo = (correo || '').toString().trim();
+
+    if (err) {
+      err.classList.add('d-none');
+      err.textContent = '';
+    }
+
+    if (!correo) {
+      if (err) {
+        err.textContent = 'Ingresa tu correo.';
+        err.classList.remove('d-none');
+      }
+      return;
+    }
+
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Validando...';
+    }
+
+    google.script.run
+      .withSuccessHandler(respuestaLogin)
+      .validarAccesoUsuario(correo);
+  }
+
+  function respuestaLogin(res) {
+    var btn = document.getElementById('btn_ingresar');
+    var err = document.getElementById('login_error');
+
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Ingresar';
+    }
+
+    if (!res || res.exito === false) {
+      if (err) {
+        err.textContent = (res && res.mensaje) ? res.mensaje : 'Error al validar.';
+        err.classList.remove('d-none');
+      }
+      return;
+    }
+
+    window.UsuarioActual = res.usuario;
+
+    var secLogin = document.getElementById('seccion_login');
+    var secMenu = document.getElementById('seccion_menu_principal');
+    if (secLogin) secLogin.classList.add('d-none');
+    if (secMenu) secMenu.classList.remove('d-none');
+
+    var bienvenida = document.getElementById('bienvenida_usuario');
+    if (bienvenida) bienvenida.textContent = 'Hola, ' + ((res.usuario && res.usuario.nombre) ? res.usuario.nombre : '');
+
+    var cardAsistencia = document.getElementById('card_asistencia');
+    var cardPermisos = document.getElementById('card_permisos');
+    var cardAprobar = document.getElementById('card_aprobar');
+    var cardAdmin = document.getElementById('card_admin');
+
+    if (cardAsistencia) cardAsistencia.classList.remove('d-none');
+    if (cardPermisos) cardPermisos.classList.remove('d-none');
+
+    var rol = (res.usuario && res.usuario.rol_id != null) ? res.usuario.rol_id : '';
+    var rolNum = parseInt(rol, 10);
+
+    if (rol === '2' || rolNum === 2) {
+      if (cardAprobar) cardAprobar.classList.remove('d-none');
+    }
+    if (rol === '3' || rolNum === 3) {
+      if (cardAprobar) cardAprobar.classList.remove('d-none');
+      if (cardAdmin) cardAdmin.classList.remove('d-none');
+    }
+  }
+</script>

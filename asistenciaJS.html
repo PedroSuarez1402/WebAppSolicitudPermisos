@@ -1,0 +1,79 @@
+<script>
+  function abrirModalAsistencia() {
+    var modalEl = document.getElementById('modalAsistencia');
+    if (!modalEl || !window.bootstrap) return;
+
+    new bootstrap.Modal(modalEl).show();
+
+    var msg = document.getElementById('estado_reloj_msg');
+    if (msg) {
+      msg.classList.remove('text-danger', 'text-success');
+      msg.classList.add('text-muted');
+      msg.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Consultando servidor...';
+    }
+
+    var btn = document.getElementById('btn_registrar_reloj');
+    if (btn) {
+      btn.classList.add('d-none');
+      btn.disabled = false;
+      btn.textContent = 'Registrar Marcación';
+      btn.onclick = null;
+    }
+
+    google.script.run
+      .withSuccessHandler(procesarEstadoReloj)
+      .obtenerEstadoReloj(window.UsuarioActual.id);
+  }
+
+  function procesarEstadoReloj(res) {
+    var msg = document.getElementById('estado_reloj_msg');
+    var btn = document.getElementById('btn_registrar_reloj');
+
+    if (!res || res.habilitado === false) {
+      if (msg) {
+        msg.classList.remove('text-muted', 'text-success');
+        msg.classList.add('text-danger');
+        msg.textContent = (res && res.mensaje) ? res.mensaje : 'No disponible.';
+      }
+      if (btn) btn.classList.add('d-none');
+      return;
+    }
+
+    if (msg) {
+      msg.classList.remove('text-muted', 'text-danger');
+      msg.classList.add('text-success');
+      msg.innerHTML = 'Etapa actual: <strong>' + res.etapa + '</strong>. Hora servidor: <strong>' + res.hora + '</strong>.';
+    }
+
+    if (btn) {
+      btn.classList.remove('d-none');
+      btn.disabled = false;
+      btn.textContent = 'Registrar Marcación';
+      btn.onclick = function () {
+        ejecutarMarcacion(res.etapa, res.categoria);
+      };
+    }
+  }
+
+  function ejecutarMarcacion(etapa, categoria) {
+    var btn = document.getElementById('btn_registrar_reloj');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Guardando...';
+    }
+
+    google.script.run
+      .withSuccessHandler(respuestaMarcacion)
+      .registrarMarcacion(window.UsuarioActual.id, window.UsuarioActual.nombre, etapa, categoria);
+  }
+
+  function respuestaMarcacion(res) {
+    alert((res && res.mensaje) ? res.mensaje : 'Operación completada.');
+
+    var modalEl = document.getElementById('modalAsistencia');
+    if (modalEl && window.bootstrap) {
+      bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
+      bootstrap.Modal.getInstance(modalEl).hide();
+    }
+  }
+</script>

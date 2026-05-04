@@ -127,6 +127,35 @@ function buscarDatosJefePorId(ss, idJefe){
   return { nombre: "", correo: "" };
 }
 
+function obtenerUsuarioPorId(uid) {
+  var id = (uid == null) ? '' : uid.toString().trim();
+  if (!id) return null;
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheetUsuarios = ss.getSheetByName('Base_Usuarios');
+  if (!sheetUsuarios) return null;
+
+  var rows = sheetUsuarios.getDataRange().getValues();
+  for (var i = 1; i < rows.length; i++) {
+    var r = rows[i] || [];
+    var idFila = (r[0] == null) ? '' : r[0].toString().trim();
+    if (idFila !== id) continue;
+    var idJefe = (r[6] == null) ? '' : r[6].toString().trim();
+    var datosJefe = buscarDatosJefePorId(ss, idJefe);
+    return {
+      id: r[0],
+      correo: r[1],
+      nombre: r[2],
+      identificacion: r[3],
+      cargo: r[4],
+      id_jefe: idJefe,
+      nombre_jefe: datosJefe.nombre,
+      correo_jefe: datosJefe.correo
+    };
+  }
+  return null;
+}
+
 /**
  * Obtiene la lista de motivos activos para el select del formulario
  */
