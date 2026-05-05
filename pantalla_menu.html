@@ -39,7 +39,7 @@
             <h5 class="card-title mb-0">Aprobar Equipo</h5>
           </div>
           <p class="card-text text-muted small flex-grow-1">Revisa y aprueba las solicitudes de tu equipo.</p>
-          <button type="button" class="btn btn-primary w-100" onclick="alert('Módulo en construcción')">Ver Solicitudes</button>
+          <button type="button" class="btn btn-primary w-100" onclick="window.top.location.href = window.APP_URL + '?v=aprobar_equipo&uid=' + window.UsuarioActual.id;">Ver Solicitudes</button>
         </div>
       </div>
     </div>
@@ -67,14 +67,19 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
       <div class="modal-body">
-        <div id="estado_reloj_msg" class="text-muted">
-          <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-          Consultando reloj del servidor...
-        </div>
+        <select id="select_tipo_marcacion" class="form-select">
+          <option value="" selected>Selecciona una marcación...</option>
+          <option value="Ingreso">Ingreso</option>
+          <option value="Salida Almuerzo">Salida Almuerzo</option>
+          <option value="Reingreso">Reingreso</option>
+          <option value="Salida Final">Salida Final</option>
+          <option value="Salida por Permiso">Salida por Permiso</option>
+          <option value="Ingreso por Permiso">Ingreso por Permiso</option>
+        </select>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
-        <button type="button" class="btn btn-primary d-none" id="btn_registrar_reloj">Registrar Marcación</button>
+        <button type="button" class="btn btn-primary" id="btn_registrar_reloj">Registrar Marcación</button>
       </div>
     </div>
   </div>

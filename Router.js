@@ -9,6 +9,13 @@ function doGet(e) {
       .setTitle('Panel Administrativo - Talento Humano')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
       .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  } else if (vista === 'aprobar_equipo') {
+    var templateJefe = HtmlService.createTemplateFromFile('vista_jefe');
+    templateJefe.uid = e.parameter.uid || '';
+    return templateJefe.evaluate()
+      .setTitle('Solicitudes de mi Equipo')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
   } else if (vista === 'formulario_permiso') {
     var template = HtmlService.createTemplateFromFile('formulario');
     template.uid = e.parameter.uid || '';

@@ -1,0 +1,272 @@
+<script>
+  var AppJefe = {
+    originales: [],
+    filtrados: [],
+    indexById: {},
+    pagina: 1,
+    porPagina: 10
+  };
+
+  function setTbodyMsg(texto) {
+    var tbody = document.getElementById('tbody_solicitudes_equipo');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">' + texto + '</td></tr>';
+  }
+
+  function normalizarTexto(v) {
+    return (v || '')
+      .toString()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+  }
+
+  function getSearchText(r) {
+    if (!r) return '';
+    return [
+      r.idSolicitud,
+      r.marcaTemporal,
+      r.empleado,
+      r.correoEmpleado,
+      r.cargoEmpleado,
+      r.fechaPermiso,
+      r.motivo,
+      r.estadoJefe,
+      r.estadoTH
+    ].map(function (x) { return (x == null) ? '' : x.toString(); }).join(' ');
+  }
+
+  function cargarSolicitudes() {
+    var uid = (window.LOGGED_UID || '').toString().trim();
+    if (!uid) {
+      setTbodyMsg('UID no encontrado.');
+      return;
+    }
+
+    setTbodyMsg('Cargando...');
+    google.script.run
+      .withSuccessHandler(function (rows) {
+        AppJefe.originales = rows || [];
+        AppJefe.indexById = {};
+        AppJefe.originales.forEach(function (r) {
+          var id = (r && r.idSolicitud != null) ? r.idSolicitud.toString() : '';
+          if (id) AppJefe.indexById[id] = r;
+        });
+        AppJefe.pagina = 1;
+        aplicarFiltros();
+      })
+      .withFailureHandler(function () {
+        setTbodyMsg('Error al cargar solicitudes.');
+      })
+      .obtenerSolicitudesJefe(uid);
+  }
+
+  function aplicarFiltros() {
+    var input = document.getElementById('buscar_solicitudes_equipo');
+    var selEstado = document.getElementById('filtro_estado_jefe');
+    var q = normalizarTexto(input ? input.value : '');
+    var estado = (selEstado && selEstado.value) ? selEstado.value.toString().trim().toUpperCase() : '';
+
+    AppJefe.filtrados = (AppJefe.originales || []).filter(function (r) {
+      if (estado) {
+        var est = (r && r.estadoJefe != null) ? r.estadoJefe.toString().trim().toUpperCase() : '';
+        if (est !== estado) return false;
+      }
+      if (!q) return true;
+      return normalizarTexto(getSearchText(r)).indexOf(q) !== -1;
+    });
+
+    renderTabla();
+  }
+
+  function getTotalPaginas() {
+    return Math.max(1, Math.ceil((AppJefe.filtrados || []).length / AppJefe.porPagina));
+  }
+
+  function cambiarPagina(nueva) {
+    var total = getTotalPaginas();
+    var p = Math.max(1, Math.min(total, nueva));
+    if (p === AppJefe.pagina) return;
+    AppJefe.pagina = p;
+    renderTabla();
+  }
+
+  function renderTabla() {
+    var tbody = document.getElementById('tbody_solicitudes_equipo');
+    if (!tbody) return;
+
+    var total = getTotalPaginas();
+    if (AppJefe.pagina > total) AppJefe.pagina = total;
+
+    var inicio = (AppJefe.pagina - 1) * AppJefe.porPagina;
+    var fin = inicio + AppJefe.porPagina;
+    var pageRows = (AppJefe.filtrados || []).slice(inicio, fin);
+
+    tbody.innerHTML = '';
+    if (!pageRows.length) {
+      setTbodyMsg('Sin resultados.');
+      actualizarPaginacion();
+      return;
+    }
+
+    pageRows.forEach(function (r) {
+      var tr = document.createElement('tr');
+
+      var tdFecha = document.createElement('td');
+      tdFecha.textContent = (r.marcaTemporal || '').toString();
+      tr.appendChild(tdFecha);
+
+      var tdEmp = document.createElement('td');
+      tdEmp.textContent = (r.empleado || '').toString();
+      tr.appendChild(tdEmp);
+
+      var tdPerm = document.createElement('td');
+      tdPerm.textContent = (r.fechaPermiso || '').toString();
+      tr.appendChild(tdPerm);
+
+      var tdMot = document.createElement('td');
+      tdMot.textContent = (r.motivo || '').toString();
+      tr.appendChild(tdMot);
+
+      var tdEstado = document.createElement('td');
+      tdEstado.textContent = (r.estadoJefe || '').toString();
+      tr.appendChild(tdEstado);
+
+      var tdAcc = document.createElement('td');
+      tdAcc.className = 'text-end';
+
+      var id = (r.idSolicitud || '').toString();
+      var est = (r.estadoJefe || '').toString().trim().toUpperCase();
+      var puedeResponder = est === 'PENDIENTE';
+
+      var btnV = document.createElement('button');
+      btnV.type = 'button';
+      btnV.className = 'btn btn-sm btn-outline-primary me-1';
+      btnV.innerHTML = '<i class="bi bi-eye"></i>';
+      btnV.onclick = function () { abrirModalDetalle(id); };
+
+      var btnA = document.createElement('button');
+      btnA.type = 'button';
+      btnA.className = 'btn btn-sm btn-success me-1';
+      btnA.innerHTML = '<i class="bi bi-check-lg"></i>';
+      btnA.disabled = !puedeResponder;
+
+      var btnR = document.createElement('button');
+      btnR.type = 'button';
+      btnR.className = 'btn btn-sm btn-danger';
+      btnR.innerHTML = '<i class="bi bi-x-lg"></i>';
+      btnR.disabled = !puedeResponder;
+
+      btnA.onclick = function () { responderSolicitud(id, 'APROBADO', btnA, btnR); };
+      btnR.onclick = function () { responderSolicitud(id, 'RECHAZADO', btnA, btnR); };
+
+      tdAcc.appendChild(btnV);
+      tdAcc.appendChild(btnA);
+      tdAcc.appendChild(btnR);
+      tr.appendChild(tdAcc);
+
+      tbody.appendChild(tr);
+    });
+
+    actualizarPaginacion();
+  }
+
+  function actualizarPaginacion() {
+    var pag = document.getElementById('paginacion_solicitudes_equipo');
+    if (!pag) return;
+    var total = getTotalPaginas();
+    var info = pag.querySelector('.page-info');
+    var btnPrev = pag.querySelector('.btn-prev');
+    var btnNext = pag.querySelector('.btn-next');
+    if (info) info.textContent = 'Página ' + AppJefe.pagina + ' de ' + total;
+    if (btnPrev) btnPrev.disabled = AppJefe.pagina <= 1;
+    if (btnNext) btnNext.disabled = AppJefe.pagina >= total;
+  }
+
+  function abrirModalDetalle(idSolicitud) {
+    var r = AppJefe.indexById[idSolicitud];
+    if (!r) return;
+
+    var el;
+    el = document.getElementById('det_id'); if (el) el.textContent = (r.idSolicitud || '').toString();
+    el = document.getElementById('det_marca'); if (el) el.textContent = (r.marcaTemporal || '').toString();
+    el = document.getElementById('det_empleado'); if (el) el.textContent = (r.empleado || '').toString();
+    el = document.getElementById('det_correo'); if (el) el.textContent = (r.correoEmpleado || '').toString();
+    el = document.getElementById('det_cargo'); if (el) el.textContent = (r.cargoEmpleado || '').toString();
+
+    var permiso = [];
+    if (r.fechaInicio || r.fechaFin) permiso.push(((r.fechaInicio || '') + (r.fechaFin ? ' al ' + r.fechaFin : '')).trim());
+    if (r.horaInicio || r.horaFin) permiso.push(((r.horaInicio || '') + (r.horaFin ? ' - ' + r.horaFin : '')).trim());
+    if (r.horasEstimadas) permiso.push(('Horas estimadas: ' + r.horasEstimadas).trim());
+    el = document.getElementById('det_permiso'); if (el) el.textContent = permiso.join(' | ');
+
+    el = document.getElementById('det_motivo'); if (el) el.textContent = (r.motivo || '').toString();
+    el = document.getElementById('det_obs'); if (el) el.textContent = (r.observaciones || '').toString() || '—';
+
+    var adj = document.getElementById('det_adjunto');
+    if (adj) {
+      var url = (r.urlAdjunto || '').toString().trim();
+      if (url) adj.innerHTML = '<a href="' + url.replace(/"/g, '&quot;') + '" target="_blank" rel="noopener">Abrir adjunto</a>';
+      else adj.textContent = '—';
+    }
+
+    el = document.getElementById('det_estado_jefe'); if (el) el.textContent = (r.estadoJefe || '').toString();
+    el = document.getElementById('det_estado_th'); if (el) el.textContent = (r.estadoTH || '').toString();
+
+    var modalEl = document.getElementById('modalDetalleSolicitud');
+    if (modalEl && window.bootstrap) bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  }
+
+  function responderSolicitud(idSolicitud, nuevaRespuesta, btnA, btnR) {
+    if (!idSolicitud) return;
+    var ok = confirm('¿Confirmas ' + nuevaRespuesta + ' la solicitud ' + idSolicitud + '?');
+    if (!ok) return;
+
+    var uid = (window.LOGGED_UID || '').toString().trim();
+    if (!uid) {
+      alert('UID no encontrado.');
+      return;
+    }
+
+    if (btnA) btnA.disabled = true;
+    if (btnR) btnR.disabled = true;
+
+    google.script.run
+      .withSuccessHandler(function (resp) {
+        if (resp && resp.exito) {
+          cargarSolicitudes();
+          return;
+        }
+        alert((resp && resp.mensaje) ? resp.mensaje : 'Error al responder.');
+        if (btnA) btnA.disabled = false;
+        if (btnR) btnR.disabled = false;
+      })
+      .withFailureHandler(function (err) {
+        alert((err && err.message) ? err.message : 'Error al responder.');
+        if (btnA) btnA.disabled = false;
+        if (btnR) btnR.disabled = false;
+      })
+      .responderSolicitudJefe(idSolicitud, nuevaRespuesta, uid);
+  }
+
+  function bindUi() {
+    var input = document.getElementById('buscar_solicitudes_equipo');
+    var sel = document.getElementById('filtro_estado_jefe');
+    if (input) input.addEventListener('input', function () { AppJefe.pagina = 1; aplicarFiltros(); });
+    if (sel) sel.addEventListener('change', function () { AppJefe.pagina = 1; aplicarFiltros(); });
+
+    var pag = document.getElementById('paginacion_solicitudes_equipo');
+    if (pag) {
+      var btnPrev = pag.querySelector('.btn-prev');
+      var btnNext = pag.querySelector('.btn-next');
+      if (btnPrev) btnPrev.addEventListener('click', function () { cambiarPagina(AppJefe.pagina - 1); });
+      if (btnNext) btnNext.addEventListener('click', function () { cambiarPagina(AppJefe.pagina + 1); });
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    bindUi();
+    cargarSolicitudes();
+  });
+</script>
