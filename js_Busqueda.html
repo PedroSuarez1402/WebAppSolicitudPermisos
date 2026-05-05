@@ -3,6 +3,9 @@
     if (typeof window.LOGGED_UID === 'undefined') return;
     if (window.LOGGED_UID === '') return;
 
+    var loader = document.getElementById('loader_uid');
+    if (loader) loader.classList.remove('d-none');
+
     var divBusqueda = document.querySelector('.seccion-busqueda');
     if (divBusqueda) divBusqueda.classList.add('d-none');
 
@@ -21,8 +24,10 @@
     var seccionDatos = document.getElementById('seccion_formulario') || document.getElementById('seccion_datos');
     var divError = document.getElementById('mensaje_error') || document.getElementById('login_error');
     var badge = document.getElementById('estado_badge');
+    var loader = document.getElementById('loader_uid');
 
     if (!usuario) {
+      if (loader) loader.classList.add('d-none');
       var divBusqueda = document.querySelector('.seccion-busqueda');
       if (divBusqueda) divBusqueda.classList.remove('d-none');
       if (divError) {
@@ -49,6 +54,7 @@
     }
 
     if (seccionDatos) seccionDatos.classList.remove('oculto', 'd-none');
+    if (loader) loader.classList.add('d-none');
   }
 
   function buscarDatos() {
