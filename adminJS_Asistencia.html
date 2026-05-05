@@ -1,0 +1,168 @@
+<script>
+  window.AppAsistencia = {
+    originales: [],
+    filtrados: []
+  };
+
+  function normalizarTextoAsistencia_(v) {
+    return (v || '')
+      .toString()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+  }
+
+  function parseFechaDDMMYYYY_(s) {
+    if (!s) return null;
+    var parts = s.toString().trim().split('/');
+    if (parts.length !== 3) return null;
+    var dd = parseInt(parts[0], 10);
+    var mm = parseInt(parts[1], 10) - 1;
+    var yyyy = parseInt(parts[2], 10);
+    if (!isFinite(dd) || !isFinite(mm) || !isFinite(yyyy)) return null;
+    return new Date(yyyy, mm, dd);
+  }
+
+  function parseFechaISO_(s) {
+    if (!s) return null;
+    var parts = s.toString().trim().split('-');
+    if (parts.length !== 3) return null;
+    var yyyy = parseInt(parts[0], 10);
+    var mm = parseInt(parts[1], 10) - 1;
+    var dd = parseInt(parts[2], 10);
+    if (!isFinite(dd) || !isFinite(mm) || !isFinite(yyyy)) return null;
+    return new Date(yyyy, mm, dd);
+  }
+
+  function cargarAsistenciaAdmin() {
+    var tbody = document.getElementById('tbody_asistencia_admin');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">Cargando...</td></tr>';
+
+    google.script.run
+      .withSuccessHandler(function (rows) {
+        window.AppAsistencia.originales = rows || [];
+        aplicarFiltrosAsistencia();
+      })
+      .withFailureHandler(function () {
+        if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4">Error al cargar asistencia</td></tr>';
+      })
+      .obtenerRegistrosAsistenciaAdmin();
+  }
+
+  function aplicarFiltrosAsistencia() {
+    var desdeEl = document.getElementById('asis_fecha_desde');
+    var hastaEl = document.getElementById('asis_fecha_hasta');
+    var buscarEl = document.getElementById('asis_buscar');
+    var catEl = document.getElementById('asis_categoria');
+
+    var desde = parseFechaISO_(desdeEl ? desdeEl.value : '');
+    var hasta = parseFechaISO_(hastaEl ? hastaEl.value : '');
+    var q = normalizarTextoAsistencia_(buscarEl ? buscarEl.value : '');
+    var cat = (catEl && catEl.value) ? catEl.value.toString().trim() : '';
+
+    window.AppAsistencia.filtrados = (window.AppAsistencia.originales || []).filter(function (r) {
+      var f = parseFechaDDMMYYYY_(r && r.fecha ? r.fecha : '');
+      if (desde && (!f || f < desde)) return false;
+      if (hasta && (!f || f > hasta)) return false;
+
+      if (cat) {
+        var c = (r && r.categoria != null) ? r.categoria.toString().trim() : '';
+        if (c !== cat) return false;
+      }
+
+      if (q) {
+        var txt = normalizarTextoAsistencia_([
+          r.idUsuario,
+          r.identificacion,
+          r.nombre,
+          r.tipo,
+          r.categoria,
+          r.fecha,
+          r.hora
+        ].map(function (x) { return (x == null) ? '' : x.toString(); }).join(' '));
+        if (txt.indexOf(q) === -1) return false;
+      }
+
+      return true;
+    });
+
+    renderTablaAsistencia();
+  }
+
+  function renderTablaAsistencia() {
+    var tbody = document.getElementById('tbody_asistencia_admin');
+    if (!tbody) return;
+
+    var rows = window.AppAsistencia.filtrados || [];
+    tbody.innerHTML = '';
+
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">Sin resultados</td></tr>';
+      actualizarKpisAsistencia_(0, 0, 0);
+      return;
+    }
+
+    var total = rows.length;
+    var aTiempo = 0;
+    var retraso = 0;
+
+    rows.forEach(function (r) {
+      var c = (r && r.categoria != null) ? r.categoria.toString().trim() : '';
+      if (c === 'A tiempo') aTiempo++;
+      if (c === 'Retraso') retraso++;
+
+      var tr = document.createElement('tr');
+
+      var tdF = document.createElement('td');
+      tdF.textContent = (r.fecha || '').toString();
+      tr.appendChild(tdF);
+
+      var tdH = document.createElement('td');
+      tdH.textContent = (r.hora || '').toString();
+      tr.appendChild(tdH);
+
+      var tdE = document.createElement('td');
+      tdE.textContent = ((r.nombre || '') + (r.identificacion ? ' (' + r.identificacion + ')' : '')).toString();
+      tr.appendChild(tdE);
+
+      var tdT = document.createElement('td');
+      tdT.textContent = (r.tipo || '').toString();
+      tr.appendChild(tdT);
+
+      var tdC = document.createElement('td');
+      tdC.textContent = c;
+      tr.appendChild(tdC);
+
+      tbody.appendChild(tr);
+    });
+
+    actualizarKpisAsistencia_(total, aTiempo, retraso);
+  }
+
+  function actualizarKpisAsistencia_(total, aTiempo, retraso) {
+    var elTotal = document.getElementById('kpi_total_asistencia');
+    var elAT = document.getElementById('kpi_a_tiempo_asistencia');
+    var elR = document.getElementById('kpi_retraso_asistencia');
+    if (elTotal) elTotal.textContent = total.toString();
+    if (elAT) elAT.textContent = aTiempo.toString();
+    if (elR) elR.textContent = retraso.toString();
+  }
+
+  function bindAsistenciaUi_() {
+    var ids = ['asis_fecha_desde', 'asis_fecha_hasta', 'asis_buscar', 'asis_categoria'];
+    ids.forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      var evt = (id === 'asis_categoria') ? 'change' : 'input';
+      el.addEventListener(evt, function () {
+        aplicarFiltrosAsistencia();
+      });
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    bindAsistenciaUi_();
+    cargarAsistenciaAdmin();
+  });
+</script>

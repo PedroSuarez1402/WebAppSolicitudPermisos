@@ -83,6 +83,47 @@ function obtenerMotivosAdmin() {
   return leerDatosDesdeFila2_(sheet);
 }
 
+function obtenerRegistrosAsistenciaAdmin() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("Registro_Asistencia");
+  var rows = leerDatosDesdeFila2_(sheet);
+  var sheetUsuarios = ss.getSheetByName("Base_Usuarios");
+  var usuarios = sheetUsuarios ? leerDatosDesdeFila2_(sheetUsuarios) : [];
+  var idxIdent = {};
+  (usuarios || []).forEach(function (u) {
+    var id = (u && u[0] != null) ? u[0].toString().trim() : "";
+    if (!id) return;
+    idxIdent[id] = (u && u[3] != null) ? u[3].toString().trim() : "";
+  });
+
+  return (rows || []).map(function (r) {
+    var fecha = r ? r[1] : "";
+    if (Object.prototype.toString.call(fecha) === '[object Date]' && !isNaN(fecha.getTime())) {
+      fecha = Utilities.formatDate(fecha, 'America/Bogota', 'dd/MM/yyyy');
+    } else {
+      fecha = (fecha == null) ? "" : fecha.toString().trim();
+    }
+
+    var hora = r ? r[2] : "";
+    if (Object.prototype.toString.call(hora) === '[object Date]' && !isNaN(hora.getTime())) {
+      hora = Utilities.formatDate(hora, 'America/Bogota', 'HH:mm:ss');
+    } else {
+      hora = (hora == null) ? "" : hora.toString().trim();
+    }
+
+    return {
+      idRegistro: (r && r[0] != null) ? r[0].toString().trim() : "",
+      fecha: fecha,
+      hora: hora,
+      idUsuario: (r && r[3] != null) ? r[3].toString().trim() : "",
+      identificacion: idxIdent[(r && r[3] != null) ? r[3].toString().trim() : ""] || "",
+      nombre: (r && r[4] != null) ? r[4].toString().trim() : "",
+      tipo: (r && r[5] != null) ? r[5].toString().trim() : "",
+      categoria: (r && r[6] != null) ? r[6].toString().trim() : ""
+    };
+  });
+}
+
 function actualizarEstadoSolicitudAdmin(idSolicitud, nuevoEstado) {
   try {
     var id = (idSolicitud !== null && idSolicitud !== undefined) ? idSolicitud.toString().trim() : "";
